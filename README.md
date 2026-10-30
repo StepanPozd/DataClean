@@ -246,7 +246,7 @@ To exercise the actual EXE on a Windows desktop:
 
 This external UI Automation helper generates its own synthetic inputs, drives the real window/file dialogs and records evidence under ignored `test-output/release/`. It is not embedded in or distributed with the application. It needs an interactive Windows desktop; native dialogs may take focus. Use `--exe "path/to/DataClean.exe"` to test a specific extracted copy inside the project.
 
-`tools/verify_release.py` independently checks the ZIP and extracts a fresh copy. After that, `tools/capture_release.py` captures its four pages with PrintWindow, without capturing other desktop windows; visually inspect the images under `test-output/release/`. The latest final EXE completed all 16 GUI checks, and the source suite passed all 104 tests; see [PACKAGING_REPORT.md](PACKAGING_REPORT.md) for evidence and remaining clean-machine checks.
+`tools/verify_release.py` independently checks the ZIP and extracts a fresh copy. After that, `tools/capture_release.py` captures its four pages with PrintWindow, without capturing other desktop windows; visually inspect the images under `test-output/release/`. The v1.0.0 EXE completed all 16 GUI checks with 104 source tests at packaging time; see [PACKAGING_REPORT.md](PACKAGING_REPORT.md) for evidence and remaining clean-machine checks. Later worker-lifetime fixes have separate Python 3.11/3.13 verification in [CI_STABILITY.md](CI_STABILITY.md); the existing v1.0.0 ZIP has not been rebuilt with those source changes.
 
 To regenerate screenshots of the actual UI:
 

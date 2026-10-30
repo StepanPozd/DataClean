@@ -13,10 +13,10 @@ from main import create_application
 
 
 @pytest.fixture
-def safety_window(qtbot, monkeypatch):
+def safety_window(qtbot, monkeypatch, finish_window):
     create_application([])
     widget = MainWindow()
-    qtbot.addWidget(widget)
+    qtbot.addWidget(widget, before_close_func=finish_window)
     widget.errors = []
     widget.notices = []
     monkeypatch.setattr(QMessageBox, "warning", lambda *args: widget.errors.append(args[2]))
@@ -24,8 +24,7 @@ def safety_window(qtbot, monkeypatch):
     monkeypatch.setattr(widget, "confirm", lambda *args: True)
     widget.show()
     yield widget
-    qtbot.waitUntil(lambda: not widget.busy and not widget._batch_active, timeout=15000)
-    widget.manager.mark_saved()
+    finish_window(widget)
     widget.close()
 
 

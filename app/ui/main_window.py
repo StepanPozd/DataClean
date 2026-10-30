@@ -5,7 +5,7 @@ from pathlib import Path
 from time import perf_counter
 from typing import Callable
 
-from PySide6.QtCore import QSize, QThreadPool, QTimer, Slot
+from PySide6.QtCore import QSize, Qt, QThreadPool, QTimer, Slot
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from shiboken6 import delete
 
 from app.core import data_processor as processor
 from app.core.data_manager import DataManager, Snapshot
@@ -240,16 +241,29 @@ class MainWindow(QMainWindow):
             return
         self._task_name, self._on_success, self._on_error = name, success, error
         self._set_busy(True, name + "…")
-        worker = TaskWorker(function)
+        worker = TaskWorker(function, self)
         self._worker = worker
-        worker.signals.succeeded.connect(self._task_succeeded)
-        worker.signals.failed.connect(self._task_failed)
+        worker.signals.succeeded.connect(self._task_succeeded, Qt.ConnectionType.QueuedConnection)
+        worker.signals.failed.connect(self._task_failed, Qt.ConnectionType.QueuedConnection)
         self.pool.start(worker)
+
+    def _release_worker(self):
+        # A queued result can reach the GUI before emit()/run() returns. Join
+        # before dropping references, enabling another task or closing the window.
+        self.pool.waitForDone()
+        worker = self._worker
+        self._worker = None
+        self._on_success = self._on_error = None
+        worker.function = None
+        worker.signals.deleteLater()
+        # PySide also retains non-auto-deleting runnables as pool children.
+        # Explicitly dispose the C++ runnable here, after the pool has joined.
+        delete(worker)
 
     @Slot(object, float)
     def _task_succeeded(self, result, duration):
         callback = self._on_success
-        self._worker = None
+        self._release_worker()
         self._set_busy(False)
         try:
             callback(result, duration)
@@ -261,7 +275,7 @@ class MainWindow(QMainWindow):
     def _task_failed(self, error, duration):
         callback = self._on_error
         operation = self._task_name
-        self._worker = None
+        self._release_worker()
         self._set_busy(False)
         self.history.add(operation, 0, str(error), duration, False)
         self.history_page.refresh(self.history.entries)
@@ -588,4 +602,5 @@ class MainWindow(QMainWindow):
         ):
             event.ignore()
         else:
+            self.pool.waitForDone()
             event.accept()

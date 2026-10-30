@@ -11,10 +11,10 @@ from main import create_application
 
 
 @pytest.fixture
-def window(qtbot, monkeypatch):
+def window(qtbot, monkeypatch, finish_window):
     create_application([])
     widget = MainWindow()
-    qtbot.addWidget(widget)
+    qtbot.addWidget(widget, before_close_func=finish_window)
     messages = []
     monkeypatch.setattr(QMessageBox, "warning", lambda *args: messages.append(args[2]))
     monkeypatch.setattr(QMessageBox, "information", lambda *args: messages.append(args[2]))
@@ -22,8 +22,7 @@ def window(qtbot, monkeypatch):
     widget.test_messages = messages
     widget.show()
     yield widget
-    qtbot.waitUntil(lambda: not widget.busy and not widget._batch_active, timeout=15000)
-    widget.manager.mark_saved()
+    finish_window(widget)
     widget.close()
 
 

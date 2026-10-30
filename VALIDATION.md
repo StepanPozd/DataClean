@@ -1,4 +1,14 @@
-# Local validation — Windows release
+# Local validation — worker lifetime and Windows CI
+
+Validation date: **2026-10-30**. The current source suite has **115 tests**, including all previous 104 and 11 worker-lifetime/workbook-close regression cases. Python **3.11.9** and **3.13.5** each passed **10 consecutive full-suite runs**, Ruff, formatting, compileall and dependency consistency. Native source launches on both interpreters imported XLSX, trimmed data and closed with zero active workers and exit 0. After 100 success/error tasks, a separate reference-release probe found zero retained workers or signal wrappers on both versions.
+
+The original Python 3.11 implementation reproduced an intermittent native access violation during worker-thread garbage collection on the third repeated full-suite run. Event-gated regression tests also deterministically exposed premature task release in both success and error paths. Explicit GUI ownership, joining before completion callbacks and coordinated fixture teardown fix that race without disabling GC, excluding tests or removing Python 3.11. The unchanged original XLSX worksheet-selection test passed 60 repetitions on each interpreter, including 30 worker-GC cases.
+
+See [CI_STABILITY.md](CI_STABILITY.md) for versions, before/after evidence, repeat-run results and the limits of the native-crash diagnosis. The existing v1.0.0 EXE/ZIP below were **not rebuilt**; these latest results describe the updated source code. A hosted Actions run after the owner's push remains necessary. No push was performed during this fix.
+
+---
+
+# Windows release validation — earlier stage
 
 Validation date: **2026-10-30**. The latest release verification supersedes the totals below while preserving the earlier data-safety evidence.
 

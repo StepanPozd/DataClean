@@ -12,10 +12,13 @@ class WorkerSignals(QObject):
 
 
 class TaskWorker(QRunnable):
-    def __init__(self, function: Callable):
+    def __init__(self, function: Callable, signals_parent: QObject):
         super().__init__()
+        # The GUI owns the runnable until QThreadPool has actually left run().
+        # Auto-deletion would release its Python closures on a pool thread.
+        self.setAutoDelete(False)
         self.function = function
-        self.signals = WorkerSignals()
+        self.signals = WorkerSignals(signals_parent)
 
     @Slot()
     def run(self):

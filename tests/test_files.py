@@ -90,6 +90,44 @@ def test_xlsx_sheets(tmp_path):
         read_file(path, sheet="Missing")
 
 
+@pytest.mark.parametrize("operation", [excel_sheets, read_file])
+@pytest.mark.parametrize("fails", [False, True])
+def test_excel_workbook_closed_after_metadata_read(tmp_path, monkeypatch, operation, fails):
+    import app.core.file_handler as module
+
+    source = tmp_path / "metadata.xlsx"
+    pd.DataFrame({"Name": ["Анна"]}).to_excel(source, index=False)
+    closed = []
+
+    class TrackedBook:
+        def __init__(self, book):
+            self.book = book
+
+        @property
+        def sheetnames(self):
+            if fails:
+                raise ValueError("metadata failed")
+            return self.book.sheetnames
+
+        def __getitem__(self, sheet):
+            return self.book[sheet]
+
+        def close(self):
+            closed.append(True)
+            self.book.close()
+
+    monkeypatch.setattr(
+        module, "load_workbook", lambda *args, **kwargs: TrackedBook(load_workbook(*args, **kwargs))
+    )
+    if fails:
+        with pytest.raises(FileReadError, match="metadata failed"):
+            operation(source)
+    else:
+        operation(source)
+    assert closed == [True]
+    source.rename(source.with_name("closed.xlsx"))
+
+
 @pytest.mark.parametrize("extension", ["csv", "xlsx"])
 def test_exports_roundtrip_and_source_immutable(tmp_path, extension):
     source = tmp_path / "Исходные данные.xlsx"
