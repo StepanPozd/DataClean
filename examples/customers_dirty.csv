@@ -1,0 +1,11 @@
+﻿ID,Name,City,Revenue,Active,Email
+1001,  Анна Смирнова  ,  Москва,1250.5,True,anna@example.test 
+1002,Иван Петров,Казань ,890.0,True,ivan@example.test
+1003,  Мария Волкова,Алматы,,False,maria@example.test
+1001,  Анна Смирнова  ,  Москва,1250.5,True,anna@example.test 
+,,,,,
+1004,Alex Morgan,London,2450.75,True,
+1005,Олег Ким,,0,False,oleg@example.test
+ ,   ,	, , , 
+1006,Елена Новикова ,Астана,1870.0,True,elena@example.test
+1007,Дмитрий Соколов,Москва,540.25,False,dmitry@example.test

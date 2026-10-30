@@ -1,0 +1,5 @@
+-r requirements-dev.txt
+pyinstaller>=6.16,<7
+pillow>=11,<13
+pywinauto>=0.6.9,<0.7; sys_platform == 'win32'
+psutil>=6,<8
