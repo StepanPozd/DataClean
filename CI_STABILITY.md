@@ -1,5 +1,7 @@
 # Windows Python 3.11 crash — investigation still open
 
+Release follow-up: **v1.0.1 now packages the current main code**, including the lifetime changes and diagnostic/test updates. See [PACKAGING_REPORT.md](PACKAGING_REPORT.md) for the separate local build/EXE evidence. The hosted-crash investigation remains open; earlier statements about not rebuilding describe the diagnostic tasks below.
+
 ## Follow-up after hosted failure of bf3ca37 — 2026-10-30
 
 **Status: the recurring hosted-runner crash is not explained or proven fixed.** The previous local success and worker-lifetime repair were insufficient. The earlier investigation below is retained as history, not evidence that the current Actions failure is resolved.

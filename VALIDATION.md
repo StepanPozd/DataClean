@@ -1,4 +1,14 @@
-# Local validation — worker lifetime and Windows CI
+# Local validation — DataClean 1.0.1
+
+Release validation date: **2026-10-30**. Version 1.0.1 packages the current `main` worker-lifetime code and updated tests. The existing PyInstaller process completed with **115 passed in 9.31s** on Python 3.13.5, Ruff, formatting, compileall and dependency consistency. Fresh Python 3.11.9 and 3.13.16 environments each passed **115 tests** (10.34s / 10.43s).
+
+The final v1.0.1 EXE extracted from the actual ZIP passed **16/16 native GUI checks**: CSV/XLSX import/export, sheet selection, cleanup, Undo/Reset, merge, identifiers/precision, formula/text guards, input preservation and clean exit 0. Four EXE pages were visually checked; Modern Dark is unchanged. CRC, manifest hashes and targeted secret checks passed. ZIP: `release/DataClean-v1.0.1-win64.zip`, **58,023,831 bytes**, SHA-256 `b67e1d19c9496b3277f3e4237e684803e8af9d2f9e86c978811d9e515f5f528a`.
+
+See [PACKAGING_REPORT.md](PACKAGING_REPORT.md) for exact versions, evidence and limits. The EXE remains unsigned. **The independent hosted Python 3.11 crash is not claimed resolved.** No push or publication occurred.
+
+---
+
+# Earlier worker-lifetime and Windows CI validation
 
 **Hosted-runner status update, 2026-10-30:** commit bf3ca37 still crashed on Python 3.11.9 in Actions run 41011588867. The local results below do not establish a hosted fix. A follow-up compared all 19 actual remote dependency versions, built matching environments, tested Qt 6.12.0/6.11.3/6.10.3, removed retained pooled-thread wrappers from two tests, and added independent CI/version/GC diagnostics. See the latest section of [CI_STABILITY.md](CI_STABILITY.md); the native hosted failure remains unexplained. No application business logic or release binary was changed in this follow-up.
 

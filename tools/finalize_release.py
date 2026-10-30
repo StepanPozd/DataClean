@@ -15,7 +15,7 @@ import pefile
 ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "dist" / "DataClean"
 RELEASE = ROOT / "release"
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 SECRET_PATTERNS = {
     "private-key": rb"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----\s+[A-Za-z0-9+/=\r\n]{80,}-----END",
     "openai-key": rb"(?<!\w)sk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{30,}",

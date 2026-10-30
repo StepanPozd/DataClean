@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont, QPalette
 from PySide6.QtWidgets import QApplication
 
+from app import __version__
 from app.ui.icons import application_icon
 from app.ui.main_window import MainWindow
 from app.ui.styles import STYLESHEET
@@ -16,7 +17,7 @@ from app.ui.styles import STYLESHEET
 def create_application(argv=None):
     application = QApplication.instance() or QApplication(argv if argv is not None else sys.argv)
     application.setApplicationName("DataClean")
-    application.setApplicationVersion("1.0.0")
+    application.setApplicationVersion(__version__)
     application.setWindowIcon(application_icon())
     application.setOrganizationName("Stepan Pozdnyakov")
     application.setStyle("Fusion")

@@ -1,4 +1,24 @@
-# DataClean 1.0.0
+# DataClean 1.0.1
+
+Prepared locally on **2026-10-30** from `main` at `37670b6`, including the Qt worker-lifetime changes from `bf3ca37` and the current test/CI diagnostics. Not published to GitHub.
+
+## Changes from 1.0.0
+
+- Retain each background task until QThreadPool has completed it, before enabling the next action or closing the window.
+- Explicit queued GUI callbacks, window-owned signal objects, GUI-thread disposal of completed runnables and release of task closures.
+- Coordinated GUI-test teardown, resource-release regression coverage and thread-ID assertions that do not retain retired QThread wrappers.
+- Application, sidebar and Windows EXE metadata now report **1.0.1**.
+- Modern Dark styling, CSV/XLSX workflows, Undo/Reset, merge and existing data-protection policies are preserved. No new user-facing features or dependency upgrades.
+
+## Validation scope
+
+See `PACKAGING_REPORT.md` in the source project for actual v1.0.1 build, source tests, packaged-EXE checks and archive hash. The independent **Python 3.11 GitHub-hosted Windows crash remains unproven as fixed**; the diagnostic matrix and GC journal are retained. This release packages the current main code, without claiming that every native race has been eliminated.
+
+The portable EXE remains unsigned. Clean-machine Windows 10/11, high-DPI and real Excel/LibreOffice checks remain additional distribution checks. Keep the entire extracted application folder, including `_internal` and license notices.
+
+---
+
+# DataClean 1.0.0 — previous local package
 
 Prepared locally on **2026-10-30** for a future Windows x64 GitHub Release. This document does not mean a release has been published.
 

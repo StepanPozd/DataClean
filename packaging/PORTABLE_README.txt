@@ -1,4 +1,4 @@
-DataClean 1.0.0 — Windows x64 portable release
+DataClean 1.0.1 — Windows x64 portable release
 Developer: Stepan Pozdnyakov
 
 1. Extract the complete DataClean folder from the ZIP to a writable location.
@@ -18,6 +18,9 @@ Original input files remain protected. Export before closing to keep changes.
 This executable is NOT digitally signed. Windows may show an unknown-publisher
 or SmartScreen warning. No security protection needs to be disabled by DataClean.
 The application contains no telemetry, advertising, auto-updater or network API.
+
+Version 1.0.1 includes the current Qt worker-lifetime fixes. Local release checks
+do not establish that the separate Python 3.11 hosted CI crash is resolved.
 
 Read LICENSE, THIRD_PARTY_NOTICES.md and LICENSES/ for copyright and license terms.
 DataClean uses Qt/PySide6 and Shiboken under LGPLv3; compatible shared libraries

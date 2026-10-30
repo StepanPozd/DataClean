@@ -1,4 +1,4 @@
-# DataClean 1.0.0 — third-party notices
+# DataClean 1.0.1 — third-party notices
 
 DataClean is Copyright (c) 2026 Stepan Pozdnyakov, distributed under the MIT license in `LICENSE`.
 It includes unmodified third-party components, which retain their own terms.

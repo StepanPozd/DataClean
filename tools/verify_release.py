@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     release = ROOT / "release"
-    archive = release / "DataClean-v1.0.0-win64.zip"
+    archive = release / "DataClean-v1.0.1-win64.zip"
     expected = archive.with_name(archive.name + ".sha256").read_text().split()[0]
     with archive.open("rb") as handle:
         actual = hashlib.file_digest(handle, "sha256").hexdigest()

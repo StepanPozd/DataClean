@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
 )
 from shiboken6 import delete
 
+from app import __version__
 from app.core import data_processor as processor
 from app.core.data_manager import DataManager, Snapshot
 from app.core.file_handler import (
@@ -137,7 +138,7 @@ class MainWindow(QMainWindow):
         )
         side.addWidget(note)
         side.addSpacing(13)
-        side.addWidget(label("DataClean  /  v1.0.0", "small"))
+        side.addWidget(label(f"DataClean  /  v{__version__}", "small"))
         layout.addWidget(sidebar)
         workspace = QVBoxLayout()
         workspace.setContentsMargins(0, 0, 0, 0)

@@ -38,9 +38,9 @@ No accounts, paid APIs, web servers or cloud processing are used. The app does n
 
 The dependency is **PySide6-Essentials**, the official PySide6 distribution containing the Qt modules this app uses. Unused Qt Addons and WebEngine packages are not needed.
 
-## Windows portable release 1.0.0
+## Windows portable release 1.0.1
 
-The locally prepared Windows x64 package is **`release/DataClean-v1.0.0-win64.zip`**. It contains `DataClean.exe`, an embedded Python runtime, required libraries, application assets and license notices. No Python installation, account, administrator access or system installation is required.
+The locally prepared Windows x64 package is **`release/DataClean-v1.0.1-win64.zip`**. It contains `DataClean.exe`, an embedded Python runtime, required libraries, application assets and license notices. No Python installation, account, administrator access or system installation is required.
 
 1. Obtain the ZIP from the project owner, or from the [planned GitHub Releases page](https://github.com/StepanPozd/DataClean/releases) once it is published. Preparing this repository does **not** publish a release.
 2. Extract the **entire** `DataClean/` folder to a writable location.
@@ -246,7 +246,7 @@ To exercise the actual EXE on a Windows desktop:
 
 This external UI Automation helper generates its own synthetic inputs, drives the real window/file dialogs and records evidence under ignored `test-output/release/`. It is not embedded in or distributed with the application. It needs an interactive Windows desktop; native dialogs may take focus. Use `--exe "path/to/DataClean.exe"` to test a specific extracted copy inside the project.
 
-`tools/verify_release.py` independently checks the ZIP and extracts a fresh copy. After that, `tools/capture_release.py` captures its four pages with PrintWindow, without capturing other desktop windows; visually inspect the images under `test-output/release/`. The v1.0.0 EXE completed all 16 GUI checks with 104 source tests at packaging time; see [PACKAGING_REPORT.md](PACKAGING_REPORT.md) for evidence and remaining clean-machine checks. Later worker-lifetime fixes have separate Python 3.11/3.13 verification in [CI_STABILITY.md](CI_STABILITY.md); the existing v1.0.0 ZIP has not been rebuilt with those source changes.
+`tools/verify_release.py` independently checks the ZIP and extracts a fresh copy. After that, `tools/capture_release.py` captures its four pages with PrintWindow, without capturing other desktop windows; visually inspect the images under `test-output/release/`. Version 1.0.1 includes the current worker-lifetime code and updated tests. See [PACKAGING_REPORT.md](PACKAGING_REPORT.md) for actual source/EXE checks and [CI_STABILITY.md](CI_STABILITY.md) for the separate, unresolved Python 3.11 hosted-runner crash investigation. A local release check does not establish a fix for that hosted failure.
 
 To regenerate screenshots of the actual UI:
 
