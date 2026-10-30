@@ -1,3 +1,5 @@
+from threading import get_ident
+
 import pandas as pd
 import pytest
 from PySide6.QtCore import Qt
@@ -224,23 +226,21 @@ def test_model_virtual_values_and_missing_markers(qapp):
 
 
 def test_worker_callbacks_run_on_gui_thread(window, qtbot):
-    from PySide6.QtCore import QThread
-    from PySide6.QtWidgets import QApplication
-
+    gui_thread = get_ident()
     threads = []
     called = []
 
     def work():
-        threads.append(QThread.currentThread())
+        threads.append(get_ident())
         return 42
 
     def done(value, duration):
-        called.append((value, QThread.currentThread()))
+        called.append((value, get_ident()))
 
     window.run_task("Thread check", work, done)
     qtbot.waitUntil(lambda: bool(called), timeout=10000)
-    assert threads[0] != QApplication.instance().thread()
-    assert called[0] == (42, QApplication.instance().thread())
+    assert threads[0] != gui_thread
+    assert called[0] == (42, gui_thread)
 
 
 def test_window_layout_fits_at_minimum_size(window, qtbot):

@@ -1,4 +1,90 @@
-# Windows Python 3.11 worker-lifetime investigation
+# Windows Python 3.11 crash — investigation still open
+
+## Follow-up after hosted failure of bf3ca37 — 2026-10-30
+
+**Status: the recurring hosted-runner crash is not explained or proven fixed.** The previous local success and worker-lifetime repair were insufficient. The earlier investigation below is retained as history, not evidence that the current Actions failure is resolved.
+
+### Actual remote environment recovered
+
+The full logs of [run 41011588867](https://github.com/StepanPozd/DataClean/actions/runs/41011588867), commit `bf3ca37`, were retrieved read-only using the existing GitHub sign-in. No credentials were printed or stored in the project. Raw logs stay under ignored `test-output/ci-deep/`.
+
+- Python 3.11 job: **3.11.9**, CPython tag `de54cf5`, MSC 1938, Windows x64. It crashes during worksheet selection, with GC active in the worker inside openpyxl style parsing. The earlier lifetime tests have not yet run at that point.
+- Runner: **Windows Server 2025**, image `windows-2025-vs2026`, version **20261021.278.1**. Local OS remains Windows 11 10.0.26200; these are not identical operating environments.
+- Python 3.13 job: **3.13.16**, not the previously tested local 3.13.5. It passed the worksheet-selection test and reached later worker tests before cancellation; its complete result is unknown.
+- Every one of the **19 packages in the remote Python 3.11 freeze matches the previous local 3.11 freeze**, after normalizing distribution names. A package-version mismatch is therefore excluded as the sufficient explanation for this run. `pip freeze` does not establish identical OS DLLs, scheduling, bootstrap tools or allocation history.
+
+| Distribution | Actual remote Python 3.11 | Actual remote Python 3.13 |
+| --- | --- | --- |
+| PySide6-Essentials / shiboken6 | 6.12.0 / 6.12.0 | 6.12.0 / 6.12.0 |
+| pandas / openpyxl | 3.1.0 / 3.1.5 | 3.1.0 / 3.1.5 |
+| NumPy | 2.4.6 | 2.5.4 |
+| pytest / pytest-qt | 9.2.0 / 4.5.0 | 9.2.0 / 4.5.0 |
+| Remaining packages | charset-normalizer 3.5.2, colorama 0.4.6, et-xmlfile 2.0.0, iniconfig 2.3.1, packaging 26.3, pluggy 1.7.0, Pygments 2.21.0, python-dateutil 3.0.0, Ruff 0.17.3, six 1.17.0, typing-extensions 4.16.0, tzdata 2026.6 | Same versions |
+
+Fresh project-local virtual environments were created with the official portable Python NuGet runtimes: `.cache/ci-deep311-612/` and `.cache/ci-deep313-612/`. The Python patch versions and all 19 frozen application/test dependencies match the respective remote jobs. Two additional Python 3.11 environments replace **only PySide6-Essentials and shiboken6 together** with 6.11.3 or 6.10.3. All other 17 versions stay identical; the inventories were compared programmatically. No installed system Python or Windows configuration was changed.
+
+### New experiments and their limits
+
+| Experiment on local Windows | Qt 6.12.0 | Qt 6.11.3 | Qt 6.10.3 |
+| --- | --- | --- | --- |
+| Fresh Python 3.11.9, original full suite/order | **10 × 115 passed** | **3 × 115 passed** | **3 × 115 passed** |
+| Original worksheet-selection test in separate processes | **5/5 passed** | **5/5 passed** | **5/5 passed** |
+| `gc.collect()` before every worker body, full suite | **115 passed** | **115 passed** | **115 passed** |
+| More frequent automatic GC, thresholds `(50, 5, 5)`, full suite | **115 passed** | **115 passed** | **115 passed** |
+| Retire 150 real GUI trees and collect their Python cycles in a shared pool thread | Completed, GC enabled | Completed, GC enabled | Completed, GC enabled |
+
+Python **3.13.16** with its exact remote 19-package freeze also completed **3 × 115 tests**. A separate Qt 6.12.0 / Python 3.11 import-overlay experiment selecting **pytest-qt 4.4.0** instead of 4.5.0 completed **115 tests**; this single successful control does not prove that 4.5.0 is defective. No version has been changed in the application's runtime requirements.
+
+The separated groups on Python 3.11 / Qt 6.12 completed **82 core tests** and **33 GUI tests**; their union is the complete 115-test suite. No test is removed from the normal full-order run.
+
+One local instrumented full run recorded **79 worker entries and 79 GUI releases**, **44 worker-thread GC starts**, and **no off-GUI destruction of the tracked windows/signal carriers**. The journal observes selected objects, not every internal Qt allocation. Its timing perturbation and successful local result cannot exclude a race on the hosted runner.
+
+### Object-lifetime audit
+
+- The existing model instances and signal carriers have QObject parents. Workers are joined before disposal, and queued results are delivered to GUI slots. These repairs still have regression coverage, but the hosted failure demonstrates they are not a sufficient explanation/fix for the crash.
+- `waitForDone()` terminates pool threads; the pool object itself is reused. Holding Python wrappers from `QThread.currentThread()` beyond that join is unsafe bookkeeping. The two tests that retained such wrappers now store `threading.get_ident()` integers instead, preserving their GUI-versus-worker assertions.
+- A separate experiment calling `objectName()` on a retired thread wrapper produced native access violations on Qt 6.12.0 and 6.10.3 in individual runs, despite `shiboken6.isValid()` reporting true; other repeats succeeded. This is a **different, deliberately invalid-lifetime operation**, not reproduction of the hosted openpyxl/GC stack. The affected tests run **after** the failing worksheet test and therefore cannot explain the earlier crash by execution order alone.
+- `tools/probe_qt_thread_lifetime.py` provides a small Qt-only probe without DataClean, pytest-qt or openpyxl. Its default mode only records metadata. `--invoke-retired-method` deliberately calls across the lifetime boundary and may crash its process; it is not a CI application gate. The small probe passed its first local runs, so equivalence to the larger failing probe is not established.
+- Workbook-close `finally` blocks and four existing success/error close tests remain intact. No evidence justifies changing Excel parsing or data processing.
+
+Upstream [Shiboken ownership documentation](https://doc.qt.io/qtforpython-6.11/shiboken6/typesystem_ownership.html) distinguishes Python wrapper and C++ instance lifetimes. [Qt thread-affinity rules](https://doc.qt.io/qt-6/threads-qobject.html) still apply. The [6.11.1 release notes](https://doc.qt.io/qtforpython-6/release_notes/pyside6_release_notes.html) describe PYSIDE-3288 deferred owner-thread deletion support; this documents relevant machinery, not proof that the current crash is that upstream issue.
+
+**Confirmed:** hosted failure after bf3ca37; identical 3.11 package versions; interpreter-patch mismatch in the old 3.13 comparison; unsafe retained-thread-wrapper bookkeeping. **Not confirmed:** the exact native corruption site, a Qt 6.12-only regression, pytest-qt 4.5 as the cause, or that the previous worker race caused this particular hosted failure. No downgrade or production GC policy is justified by the current evidence.
+
+### Diagnostic CI changes and next experiment
+
+The workflow now sets **`strategy.fail-fast: false`** and runs four independent entries: Python 3.11.9 / Qt 6.12.0, Python 3.13.16 / Qt 6.12.0, and Python 3.11.9 with Qt 6.11.3 and 6.10.3. `.github/ci-constraints.txt` fixes the common packages to the recovered remote versions; NumPy and the matched Qt/Shiboken pair are explicit matrix pins. The application's flexible runtime requirements remain unchanged.
+
+Before tests, `tools/ci_diagnostics.py` prints and saves Python/platform details, the requested core package versions, all installed versions, Qt runtime, GC settings, CPU count and a small whitelist of runner image metadata. It does not dump environment variables or document contents.
+
+Each entry executes:
+
+1. The complete suite in a fresh process **without journal hooks**, preserving the original order.
+2. The complete suite with an opt-in GC/Qt lifetime journal.
+3. Core and GUI groups in separate processes.
+4. Five separate runs of the original worksheet-selection test.
+
+Later diagnostic steps use `if: !cancelled()` to gather evidence after a failed step; **they do not erase its failure**. There is no `continue-on-error`, skip or xfail. The subprocess runner returns a nonzero overall status if any child fails or times out, even if later iterations pass. A deliberate invalid-argument child returned pytest exit 4 and the driver correctly returned 1.
+
+The journal uses immediate JSONL appends for test phases, GC starts/stops and thread IDs, worker entry/exit, GUI join/release, tracked QObject destruction and wrapper finalization. It does not collect garbage, flush deferred deletion or alter application ownership. Normal testing does not load the plugin. Log/JUnit/environment/install evidence is uploaded with `if: always()` and a 14-day retention; test documents and native memory dumps are not requested.
+
+Run locally, for example:
+
+```powershell
+.\.cache\ci-deep311-612\Scripts\python.exe tools/ci_diagnostics.py --group full --output test-output/ci/full
+.\.cache\ci-deep311-612\Scripts\python.exe tools/ci_diagnostics.py --group full --journal --output test-output/ci/journal
+.\.cache\ci-deep311-612\Scripts\python.exe tools/ci_diagnostics.py --group excel --repeat 5 --journal --output test-output/ci/excel
+```
+
+**Next required experiment:** after the owner pushes this diagnostic commit, compare all four hosted matrix entries and preserve the full-run failure plus the journal artifacts. If only 6.12 fails repeatedly with matched other packages, that supports a version interaction; if only full-order runs fail while isolated groups pass, bisect the preceding test prefix in additional diagnostic runs while retaining the full suite as a required gate. If instrumentation changes the result, compare the last GC and QObject events rather than treating a journaled pass as a fix. A native stack/minimal reproducer on the same Server 2025 image remains necessary if those records cannot identify the destroyed object.
+
+After the thread-ID test cleanup, final uninstrumented full runs passed **115/115 in all four local matrix environments**; final journaled full runs passed **115/115** on Python 3.11.9 and 3.13.16 with Qt 6.12.0. Ruff, formatting and compileall passed on both exact Python versions, and dependency consistency passed. The workflow YAML was parsed locally and its four matrix entries, fail-fast setting and absence of continue-on-error checked; it was not executed remotely.
+
+The current commit is **diagnostic, not a claim of hosted stability**. No push, workflow dispatch, publication or EXE rebuild was performed. Existing release hashes and source examples are unchanged. Detailed local evidence is under ignored `test-output/ci-deep/`; raw credentials are not part of those artifacts.
+
+---
+
+# Previous local investigation — superseded for hosted-crash conclusions
 
 Validation date: **2026-10-30**. Baseline: `0b0d6ec` (`Initial release - DataClean v1.0.0`). This is a source fix; the existing v1.0.0 EXE and ZIP were not rebuilt.
 

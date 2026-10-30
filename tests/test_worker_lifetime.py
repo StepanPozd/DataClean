@@ -2,7 +2,7 @@
 
 import gc
 import weakref
-from threading import Event
+from threading import Event, get_ident
 
 import pandas as pd
 import pytest
@@ -157,7 +157,7 @@ def test_excel_import_with_collection_in_worker(worker_window, qtbot, tmp_path, 
     assert gc_enabled, "Exercise collection with automatic GC enabled"
 
     def inspect(path):
-        threads.append(QThread.currentThread())
+        threads.append(get_ident())
         gc.collect()
         return excel_sheets(path)
 
@@ -169,7 +169,7 @@ def test_excel_import_with_collection_in_worker(worker_window, qtbot, tmp_path, 
         assert worker_window.manager.current.frame["Name"].tolist() == ["Борис", "Иван"]
         assert worker_window._worker is None and worker_window.pool.activeThreadCount() == 0
     assert len(threads) == 10
-    assert all(thread != QApplication.instance().thread() for thread in threads)
+    assert all(thread != get_ident() for thread in threads)
     assert gc.isenabled() == gc_enabled
     assert source.read_bytes() == original
     moved = source.with_name("Переименованная книга.xlsx")

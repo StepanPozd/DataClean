@@ -8,21 +8,69 @@ on:
 jobs:
   test:
     runs-on: windows-latest
+    timeout-minutes: 20
+    name: Python ${{ matrix.python-version }} / Qt ${{ matrix.qt-version }}
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ['3.11', '3.13']
+        include:
+          - python-version: '3.11.9'
+            qt-version: '6.12.0'
+            numpy-version: '2.4.6'
+          - python-version: '3.13.16'
+            qt-version: '6.12.0'
+            numpy-version: '2.5.4'
+          - python-version: '3.11.9'
+            qt-version: '6.11.3'
+            numpy-version: '2.4.6'
+          - python-version: '3.11.9'
+            qt-version: '6.10.3'
+            numpy-version: '2.4.6'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-          cache-dependency-path: requirements*.txt
-      - run: python -m pip install -r requirements-dev.txt
+          cache-dependency-path: |
+            requirements*.txt
+            .github/ci-constraints.txt
+      - name: Install reproducible diagnostic dependencies
+        run: |
+          New-Item -ItemType Directory -Force test-output/ci | Out-Null
+          python -m pip install -r requirements-dev.txt -c .github/ci-constraints.txt "numpy==${{ matrix.numpy-version }}" "PySide6-Essentials==${{ matrix.qt-version }}" "shiboken6==${{ matrix.qt-version }}" --report test-output/ci/install.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip check
       - name: Record resolved Python and dependency versions
         run: |
-          python -VV
-          python -m pip freeze
+          python tools/ci_diagnostics.py --output test-output/ci/environment
       - run: python -m ruff check .
       - run: python -m ruff format --check .
-      - run: python -X faulthandler -m pytest -v
+      # Keep the original complete order in a fresh process, without journal hooks.
+      - name: Full suite without instrumentation
+        run: python tools/ci_diagnostics.py --group full --output test-output/ci/full
+      - name: Full suite with GC and Qt lifetime journal
+        if: ${{ !cancelled() }}
+        run: python tools/ci_diagnostics.py --group full --journal --output test-output/ci/journal
+      - name: Data processing and file tests in a separate process
+        if: ${{ !cancelled() }}
+        run: python tools/ci_diagnostics.py --group core --output test-output/ci/core
+      - name: GUI tests in a separate process
+        if: ${{ !cancelled() }}
+        run: python tools/ci_diagnostics.py --group gui --journal --output test-output/ci/gui
+      - name: Repeat the original worksheet-selection test
+        if: ${{ !cancelled() }}
+        run: python tools/ci_diagnostics.py --group excel --repeat 5 --journal --output test-output/ci/excel
+      - name: Preserve evidence even after a native crash
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-python-${{ matrix.python-version }}-qt-${{ matrix.qt-version }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            test-output/ci/**/*.json
+            test-output/ci/**/*.jsonl
+            test-output/ci/**/*.log
+            test-output/ci/**/*.xml
+            test-output/ci/**/freeze.txt
